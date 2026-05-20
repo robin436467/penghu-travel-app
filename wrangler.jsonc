@@ -1,9 +1,17 @@
 {
-  // Cloudflare Workers 靜態資產部署（把 Vite build 出來的 dist 當網站）
+  // Cloudflare Workers：靜態網站(dist) + 全團同步 API(/api/state)
   "name": "penghu-travel-app",
+  "main": "worker/index.js",
   "compatibility_date": "2025-05-01",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  // 全團共用資料存這個 KV。請在 Cloudflare 後台建立一個 KV namespace，
+  // 把它的 id 填到下面（建立前先用 dashboard 取得 id）。
+  "kv_namespaces": [
+    { "binding": "TRIP", "id": "a198942236dc44efa4a1b3ac47f8457f" }
+  ]
 }

@@ -1,21 +1,5 @@
 import { useState } from 'react'
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-  arrayMove,
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import {
   Navigation,
   MoreVertical,
   Repeat,
@@ -23,8 +7,6 @@ import {
   Eye,
   Trash2,
   Plus,
-  GripVertical,
-  ArrowDownUp,
   Pencil,
   MapPinned,
   List,
@@ -34,7 +16,6 @@ import { useNav } from '../App'
 import { useStore } from '../store'
 import { getStopMeta } from '../ui/meta'
 import { openNavigate } from '../lib/maps'
-import { suggestTime } from '../lib/time'
 import Sheet from '../components/Sheet'
 import SpotPicker from '../components/SpotPicker'
 import StopForm from '../components/StopForm'
@@ -45,21 +26,15 @@ const fmtDate = (s) => {
   return `${m}/${d}`
 }
 
-function SortableStop({ stop, index, onAction }) {
+// 依時間排序的鍵（沒填時間排最後）
+const timeKey = (t) => (t && /^\d{1,2}:\d{2}$/.test(t) ? t.padStart(5, '0') : '99:99')
+const byTime = (a, b) => timeKey(a.time).localeCompare(timeKey(b.time))
+
+function StopCard({ stop, index, onAction }) {
   const meta = getStopMeta(stop.type)
   const Icon = meta.Icon
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: stop.id,
-  })
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.7 : 1,
-    zIndex: isDragging ? 20 : undefined,
-  }
-
   return (
-    <div ref={setNodeRef} style={style} className="relative pl-12">
+    <div className="relative pl-12">
       <span
         className="absolute left-0 top-1 flex h-8 w-8 items-center justify-center rounded-full text-sm font-black text-white"
         style={{ background: '#ff4d57' }}
@@ -86,18 +61,6 @@ function SortableStop({ stop, index, onAction }) {
             <p className={`font-bold text-ink ${stop.skipped ? 'line-through' : ''}`}>{stop.name}</p>
             {stop.note && <p className="mt-0.5 text-[13px] leading-snug text-ink-soft">{stop.note}</p>}
           </div>
-
-          {/* 拖曳把手 */}
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            style={{ touchAction: 'none' }}
-            className="flex h-8 w-7 shrink-0 cursor-grab items-center justify-center text-ink-faint active:cursor-grabbing"
-            aria-label="拖曳排序"
-          >
-            <GripVertical size={18} />
-          </button>
 
           <button
             type="button"
@@ -132,38 +95,9 @@ export default function Itinerary() {
   const [picker, setPicker] = useState(null) // { mode: 'replace'|'add', stop? }
   const [form, setForm] = useState(null) // { isEdit, stop?, initial? }
   const [addChoice, setAddChoice] = useState(false)
-  const [timeEdit, setTimeEdit] = useState(null) // 拖曳後調整時間 { stopId, name, time }
 
   const current = state.days.find((d) => d.day === day) || state.days[0]
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
-
-  const onDragEnd = ({ active, over }) => {
-    if (!over || active.id === over.id) return
-    const ids = current.stops.map((s) => s.id)
-    const oldI = ids.indexOf(active.id)
-    const newI = ids.indexOf(over.id)
-    const newIds = arrayMove(ids, oldI, newI)
-    dispatch({ type: 'REORDER_STOPS', day, ids: newIds })
-    // 依新位置前後站建議時間，跳出調整視窗
-    const byId = Object.fromEntries(current.stops.map((s) => [s.id, s]))
-    const moved = byId[active.id]
-    setTimeEdit({
-      stopId: active.id,
-      name: moved?.name || '',
-      time: suggestTime(newIds, newI, byId, moved?.time || ''),
-    })
-  }
-
-  const confirmTime = () => {
-    if (/^\d{1,2}:\d{2}$/.test(timeEdit.time)) {
-      dispatch({ type: 'REPLACE_STOP', day, stopId: timeEdit.stopId, patch: { time: timeEdit.time } })
-    }
-    setTimeEdit(null)
-  }
+  const stops = [...current.stops].sort(byTime) // 永遠依時間排序
 
   const handlePick = (spot) => {
     const isFood = ['美食', '早餐', '咖啡廳'].includes(spot.category)
@@ -176,7 +110,6 @@ export default function Itinerary() {
       })
       setPicker(null)
     } else {
-      // 加入景點 → 開表單填時間（時間必填）
       setPicker(null)
       setForm({
         isEdit: false,
@@ -248,45 +181,26 @@ export default function Itinerary() {
       </div>
 
       {view === 'route' ? (
-        <RouteMap stops={current.stops} />
+        <RouteMap stops={stops} />
       ) : (
-        <>
-          {/* 依時間排序 */}
-          <div className="flex justify-end px-4 pt-2">
-            <button
-              type="button"
-              onClick={() => dispatch({ type: 'SORT_BY_TIME', day })}
-              className="flex items-center gap-1 rounded-full bg-brand-soft px-3 py-1.5 text-[13px] font-bold text-brand active:scale-95"
-              style={{ transition: 'transform .12s' }}
-            >
-              <ArrowDownUp size={14} /> 依時間排序
-            </button>
-          </div>
+        <div className="px-4 pt-3">
+          {stops.map((s, i) => (
+            <StopCard key={s.id} stop={s} index={i} onAction={setActionStop} />
+          ))}
 
-          {/* 時間軸（可拖曳排序） */}
-          <div className="px-4 pt-3">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-              <SortableContext items={current.stops.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                {current.stops.map((s, i) => (
-                  <SortableStop key={s.id} stop={s} index={i} onAction={setActionStop} />
-                ))}
-              </SortableContext>
-            </DndContext>
+          {!stops.length && (
+            <p className="py-10 text-center text-sm text-ink-faint">這天還沒有行程點，點下方新增。</p>
+          )}
 
-            {!current.stops.length && (
-              <p className="py-10 text-center text-sm text-ink-faint">這天還沒有行程點，點下方新增。</p>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setAddChoice(true)}
-              className="mb-2 ml-12 flex w-[calc(100%-3rem)] items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-line py-3 text-sm font-bold text-ink-soft active:bg-white"
-            >
-              <Plus size={18} /> 新增行程點
-            </button>
-            <p className="ml-12 pb-2 text-center text-[12px] text-ink-faint">長按右側把手可上下拖曳調整順序</p>
-          </div>
-        </>
+          <button
+            type="button"
+            onClick={() => setAddChoice(true)}
+            className="mb-2 ml-12 flex w-[calc(100%-3rem)] items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-line py-3 text-sm font-bold text-ink-soft active:bg-white"
+          >
+            <Plus size={18} /> 新增行程點
+          </button>
+          <p className="ml-12 pb-2 text-center text-[12px] text-ink-faint">行程會自動依時間排序，改時間就會自動排好</p>
+        </div>
       )}
 
       {/* 行程點動作選單 */}
@@ -382,41 +296,6 @@ export default function Itinerary() {
         initial={form?.initial}
         isEdit={form?.isEdit}
       />
-
-      {/* 拖曳後調整時間 */}
-      <Sheet open={!!timeEdit} onClose={() => setTimeEdit(null)} title="調整時間">
-        {timeEdit && (
-          <>
-            <p className="text-sm leading-relaxed text-ink-soft">
-              已移動「<span className="font-bold text-ink">{timeEdit.name}</span>」。
-              依前後行程建議的時間如下，可直接修改或略過：
-            </p>
-            <input
-              type="time"
-              value={timeEdit.time}
-              onChange={(e) => setTimeEdit({ ...timeEdit, time: e.target.value })}
-              className="mt-3 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-[15px] text-ink outline-none focus:border-brand"
-            />
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setTimeEdit(null)}
-                className="flex-1 rounded-xl border border-line py-3 font-bold text-ink-soft"
-              >
-                略過
-              </button>
-              <button
-                type="button"
-                onClick={confirmTime}
-                className="flex-1 rounded-xl py-3 font-bold text-white"
-                style={{ background: '#1098f0' }}
-              >
-                更新時間
-              </button>
-            </div>
-          </>
-        )}
-      </Sheet>
     </div>
   )
 }

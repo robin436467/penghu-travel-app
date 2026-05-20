@@ -6,6 +6,7 @@ import Itinerary from './pages/Itinerary'
 import Explore from './pages/Explore'
 import Expenses from './pages/Expenses'
 import SpotDetail from './components/SpotDetail'
+import InstallPrompt from './components/InstallPrompt'
 
 const NavContext = createContext(null)
 export const useNav = () => useContext(NavContext)
@@ -42,6 +43,7 @@ export default function App() {
         </div>
 
         <BottomNav tab={tab} onChange={nav.goTab} />
+        <InstallPrompt />
 
         {spotId && <SpotDetail spotId={spotId} onClose={nav.closeSpot} />}
       </NavContext.Provider>
