@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useReducer, useRef } from 'react'
 import { itinerary as seedItinerary } from './data/itinerary'
+import { toMin } from './lib/time'
 
 const STORAGE_KEY = 'penghu-app-v1'
 const CODE =
@@ -63,13 +64,28 @@ function reducer(state, action) {
             : d,
         ),
       }
-    case 'ADD_STOP':
+    case 'ADD_STOP': {
+      const newStop = { id: uid(), ...action.stop }
+      const t = toMin(newStop.time)
       return {
         ...state,
-        days: state.days.map((d) =>
-          d.day === action.day ? { ...d, stops: [...d.stops, { id: uid(), ...action.stop }] } : d,
-        ),
+        days: state.days.map((d) => {
+          if (d.day !== action.day) return d
+          const stops = [...d.stops]
+          // 依時間插到正確位置：放在第一個「時間比它晚」的行程之前；都沒有就放最後
+          let idx = stops.length
+          if (t != null) {
+            const i = stops.findIndex((s) => {
+              const st = toMin(s.time)
+              return st != null && st > t
+            })
+            if (i >= 0) idx = i
+          }
+          stops.splice(idx, 0, newStop)
+          return { ...d, stops }
+        }),
       }
+    }
     case 'REMOVE_STOP':
       return {
         ...state,
