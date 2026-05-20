@@ -7,7 +7,7 @@ export default function RouteMap({ stops }) {
   const withPlace = stops.filter((s) => s.place && !s.skipped)
 
   return (
-    <div className="px-4 pb-8 pt-2">
+    <div className="px-4 pb-28 pt-2">
       {/* 整段路線開 Google 地圖 */}
       <button
         type="button"

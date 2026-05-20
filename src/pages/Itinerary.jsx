@@ -300,7 +300,7 @@ export default function Itinerary() {
       {view === 'route' ? (
         <RouteMap stops={stops} />
       ) : (
-        <div className="px-4 pt-3">
+        <div className="px-4 pb-28 pt-3">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={stops.map((s) => s.id)} strategy={verticalListSortingStrategy}>
               {stops.map((s, i) => (
@@ -316,20 +316,26 @@ export default function Itinerary() {
             </SortableContext>
           </DndContext>
 
-          {!stops.length && (
-            <p className="py-10 text-center text-sm text-ink-faint">這天還沒有行程點，點下方新增。</p>
+          {!stops.length ? (
+            <p className="py-10 text-center text-sm text-ink-faint">這天還沒有行程點，點右下角的「＋」新增。</p>
+          ) : (
+            <p className="pb-2 pt-1 text-center text-[12px] text-ink-faint">拖曳右側把手可調整順序</p>
           )}
-
-          <button
-            type="button"
-            onClick={() => setAddChoice(true)}
-            className="mb-2 ml-12 flex w-[calc(100%-3rem)] items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-line py-3 text-sm font-bold text-ink-soft active:bg-white"
-          >
-            <Plus size={18} /> 新增行程點
-          </button>
-          <p className="ml-12 pb-2 text-center text-[12px] text-ink-faint">拖曳右側把手可調整順序</p>
         </div>
       )}
+
+      {/* 新增行程點 FAB（右下角紅色＋） */}
+      <div className="pointer-events-none fixed bottom-0 left-1/2 z-20 w-full max-w-[480px] -translate-x-1/2">
+        <button
+          type="button"
+          onClick={() => setAddChoice(true)}
+          className="pointer-events-auto absolute bottom-[calc(84px+env(safe-area-inset-bottom))] right-5 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-float active:scale-95"
+          style={{ background: '#ff4d57', transition: 'transform .12s' }}
+          aria-label="新增行程點"
+        >
+          <Plus size={28} />
+        </button>
+      </div>
 
       {/* 行程點動作選單 */}
       <Sheet open={!!actionStop} onClose={() => setActionStop(null)} title={actionStop?.name || ''}>
