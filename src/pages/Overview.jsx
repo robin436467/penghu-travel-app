@@ -64,7 +64,7 @@ export default function Overview() {
       </div>
 
       {/* 捷徑 */}
-      <div className="-mt-5 flex gap-3 px-4">
+      <div className="relative z-10 -mt-5 flex items-stretch gap-3 px-4">
         <Shortcut Icon={CalendarDays} label="看行程" tint="#1098f0" onClick={() => nav.goItinerary(1)} />
         <Shortcut Icon={Compass} label="探索景點" tint="#22a06b" onClick={() => nav.goTab('explore')} />
         <Shortcut Icon={Wallet} label="共同記帳" tint="#ff7a2f" onClick={() => nav.goTab('expenses')} />

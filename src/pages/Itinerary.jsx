@@ -160,7 +160,7 @@ export default function Itinerary() {
     const newIds = arrayMove(ids, oldI, newI)
     dispatch({ type: 'REORDER_STOPS', day, ids: newIds })
 
-    // 拖到新位置後，若時間與前後衝突才跳出調整提示
+    // 拖到新位置後，若時間與前後衝突才跳出調整提示（記住原順序以便還原）
     const byId = Object.fromEntries(stops.map((s) => [s.id, s]))
     const ordered = newIds.map((id) => byId[id])
     const idx = newIds.indexOf(active.id)
@@ -170,6 +170,7 @@ export default function Itinerary() {
         stopId: active.id,
         name: moved.name,
         time: suggestTime(newIds, idx, byId, moved.time),
+        prevIds: ids,
       })
     }
   }
@@ -178,6 +179,11 @@ export default function Itinerary() {
     if (/^\d{1,2}:\d{2}$/.test(timeEdit.time)) {
       dispatch({ type: 'REPLACE_STOP', day, stopId: timeEdit.stopId, patch: { time: timeEdit.time } })
     }
+    setTimeEdit(null)
+  }
+
+  const revertMove = () => {
+    if (timeEdit?.prevIds) dispatch({ type: 'REORDER_STOPS', day, ids: timeEdit.prevIds })
     setTimeEdit(null)
   }
 
@@ -389,7 +395,7 @@ export default function Itinerary() {
           <>
             <p className="text-sm leading-relaxed text-ink-soft">
               「<span className="font-bold text-ink">{timeEdit.name}</span>」移到這個位置後，時間和前後行程
-              <span className="font-bold text-coral">重疊或順序顛倒</span>。下面是建議時間，可直接用或自己改：
+              <span className="font-bold text-coral">重疊或順序顛倒</span>。要用下面的建議時間留在新位置，還是放回原位？
             </p>
             <input
               type="time"
@@ -400,10 +406,10 @@ export default function Itinerary() {
             <div className="mt-4 flex gap-2">
               <button
                 type="button"
-                onClick={() => setTimeEdit(null)}
+                onClick={revertMove}
                 className="flex-1 rounded-xl border border-line py-3 font-bold text-ink-soft"
               >
-                保持原樣
+                放回原位
               </button>
               <button
                 type="button"
@@ -411,7 +417,7 @@ export default function Itinerary() {
                 className="flex-1 rounded-xl py-3 font-bold text-white"
                 style={{ background: '#1098f0' }}
               >
-                更新時間
+                用建議時間
               </button>
             </div>
           </>

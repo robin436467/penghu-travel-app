@@ -73,20 +73,18 @@ export default function Expenses() {
       )}
       {tab === '預算估算' && <BudgetView />}
 
-      {/* 新增花費 FAB（僅在明細頁） */}
-      {tab === '花費明細' && (
-        <div className="pointer-events-none fixed bottom-0 left-1/2 z-20 w-full max-w-[480px] -translate-x-1/2">
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="pointer-events-auto absolute bottom-[calc(84px+env(safe-area-inset-bottom))] right-5 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-float active:scale-95"
-            style={{ background: '#1098f0', transition: 'transform .12s' }}
-            aria-label="新增花費"
-          >
-            <Plus size={28} />
-          </button>
-        </div>
-      )}
+      {/* 新增花費 FAB（三個分頁都顯示） */}
+      <div className="pointer-events-none fixed bottom-0 left-1/2 z-20 w-full max-w-[480px] -translate-x-1/2">
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="pointer-events-auto absolute bottom-[calc(84px+env(safe-area-inset-bottom))] right-5 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-float active:scale-95"
+          style={{ background: '#1098f0', transition: 'transform .12s' }}
+          aria-label="新增花費"
+        >
+          <Plus size={28} />
+        </button>
+      </div>
 
       <AddExpense
         open={adding}
@@ -177,7 +175,7 @@ function Settlement({ byMember, total, settlements, hasExpense }) {
     )
   }
   return (
-    <div className="px-4 pb-8 pt-3">
+    <div className="px-4 pb-28 pt-3">
       {/* 每人收支 */}
       <p className="mb-2 px-1 text-sm font-bold text-ink">每人收支</p>
       <div className="space-y-2">
@@ -246,7 +244,7 @@ function Settlement({ byMember, total, settlements, hasExpense }) {
 
 function BudgetView() {
   return (
-    <div className="px-4 pb-8 pt-3">
+    <div className="px-4 pb-28 pt-3">
       <p className="mb-2 px-1 text-xs text-ink-faint">以下為行程規劃時的預算估算（取自 Excel），實際花費請看「花費明細」。</p>
       <div className="space-y-2.5">
         {members.map((m) => (

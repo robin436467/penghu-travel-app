@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Minus, Plus } from 'lucide-react'
+import { Minus, Plus, Check } from 'lucide-react'
 import Sheet from './Sheet'
 import Avatar from './Avatar'
 import { members } from '../data/trip'
@@ -145,50 +145,53 @@ export default function AddExpense({ open, onClose, onSave }) {
         </div>
       </div>
 
-      {/* 這筆誰來了（可調整每家人數） */}
+      {/* 這筆有誰參與（點一下選/不選） */}
       <div className="mt-4">
         <p className="mb-1 text-sm font-bold text-ink">這筆有誰參與</p>
-        <p className="mb-2 text-[12px] text-ink-faint">調整每家來的大人／小孩人數，沒來就調成 0；依人數權重分攤（大人 1、小孩 0.5）。</p>
+        <p className="mb-2 text-[12px] text-ink-faint">點一下選擇要分攤的人；家庭可再微調大人／小孩人數（大人 1、小孩 0.5）。</p>
         <div className="space-y-1.5">
           {members.map((m) => {
             const p = parts[m.id]
             const w = partWeight(p)
             const joined = p.adults + p.kids > 0
             const share = joined && totalWeight ? (amt * w) / totalWeight : 0
+            const toggle = () =>
+              setParts((prev) => ({
+                ...prev,
+                [m.id]: joined ? { adults: 0, kids: 0 } : { adults: m.adults, kids: m.kids },
+              }))
             return (
               <div
                 key={m.id}
-                className="rounded-xl border px-3 py-2"
-                style={joined ? { borderColor: m.color, background: m.color + '0d' } : { borderColor: '#e8eaef' }}
+                className="overflow-hidden rounded-xl border"
+                style={joined ? { borderColor: m.color, background: m.color + '0d' } : { borderColor: '#e8eaef', background: '#fff' }}
               >
-                <div className="flex items-center gap-3">
-                  <Avatar member={m} size={30} />
-                  <div className="flex-1">
+                <button type="button" onClick={toggle} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
+                  <span style={{ opacity: joined ? 1 : 0.4 }}>
+                    <Avatar member={m} size={32} />
+                  </span>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-ink">{m.name}</p>
-                    <p className="text-[11px] text-ink-faint">{m.sub}</p>
+                    <p className="text-[11px] text-ink-faint">
+                      {m.sub}
+                      {joined && isFamily(m) ? `・大人 ${p.adults}、小孩 ${p.kids}` : ''}
+                    </p>
                   </div>
                   {joined && <span className="text-sm font-bold text-ink">{formatNT(share)}</span>}
-                </div>
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border"
+                    style={joined ? { background: m.color, borderColor: m.color } : { borderColor: '#cbd2da' }}
+                  >
+                    {joined && <Check size={15} color="#fff" strokeWidth={3} />}
+                  </span>
+                </button>
 
-                <div className="mt-2 flex items-center gap-4 pl-[42px]">
-                  {isFamily(m) ? (
-                    <>
-                      <Stepper label="大人" value={p.adults} max={m.adults} onChange={(v) => setPart(m.id, { adults: v })} />
-                      {m.kids > 0 && (
-                        <Stepper label="小孩" value={p.kids} max={m.kids} onChange={(v) => setPart(m.id, { kids: v })} />
-                      )}
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setPart(m.id, { adults: joined ? 0 : 1, kids: 0 })}
-                      className="rounded-full px-3 py-1 text-[13px] font-medium"
-                      style={joined ? { background: m.color, color: '#fff' } : { background: '#f0f2f5', color: '#5b6675' }}
-                    >
-                      {joined ? '有參加' : '沒參加'}
-                    </button>
-                  )}
-                </div>
+                {joined && isFamily(m) && (
+                  <div className="flex items-center gap-5 border-t px-3 py-2 pl-[54px]" style={{ borderColor: m.color + '33' }}>
+                    <Stepper label="大人" value={p.adults} max={m.adults} onChange={(v) => setPart(m.id, { adults: v })} />
+                    {m.kids > 0 && <Stepper label="小孩" value={p.kids} max={m.kids} onChange={(v) => setPart(m.id, { kids: v })} />}
+                  </div>
+                )}
               </div>
             )
           })}
