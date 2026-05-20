@@ -10,12 +10,23 @@ export function viewUrl(query) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 }
 
+// 開啟地圖連結。
+// 已「加到主畫面」的 PWA：用同一視窗開（交給地圖 App，回來不會有「完成」工具列）。
+// 一般瀏覽器：開新分頁。
+function go(url) {
+  if (!url) return
+  const standalone =
+    window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
+  if (standalone) window.location.href = url
+  else window.open(url, '_blank', 'noopener')
+}
+
 export function openNavigate(query) {
-  window.open(navigateUrl(query), '_blank', 'noopener')
+  go(navigateUrl(query))
 }
 
 export function openView(query) {
-  window.open(viewUrl(query), '_blank', 'noopener')
+  go(viewUrl(query))
 }
 
 // 把整段行程（依序的多個地點）丟進 Google 地圖路線規劃
@@ -31,6 +42,5 @@ export function routeUrl(places) {
 }
 
 export function openRoute(places) {
-  const url = routeUrl(places)
-  if (url) window.open(url, '_blank', 'noopener')
+  go(routeUrl(places))
 }

@@ -37,7 +37,7 @@ export default function StopForm({ open, onClose, onSave, initial, isEdit }) {
       time,
       type,
       note: note.trim(),
-      place: place.trim() || (name.trim() ? `${name.trim()} 澎湖` : ''),
+      place: place.trim(),
     })
     onClose()
   }
@@ -52,6 +52,9 @@ export default function StopForm({ open, onClose, onSave, initial, isEdit }) {
           placeholder="例如：奎壁山摩西分海"
           className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-[15px] text-ink outline-none placeholder:text-ink-faint focus:border-brand"
         />
+        {!place && (
+          <p className="mt-1 text-[12px] text-ink-faint">自訂行程不會有導航，也不會列入「整段路線」。要導航請從「探索」加入景點。</p>
+        )}
       </div>
 
       <div className="mt-3">
