@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ChevronLeft,
   Navigation,
@@ -29,11 +29,47 @@ export default function SpotDetail({ spotId, onClose }) {
   const [time, setTime] = useState('')
   const [tried, setTried] = useState(false)
 
+  // 從下方滑入 + 下滑關閉
+  const scrollRef = useRef(null)
+  const startYRef = useRef(0)
+  const [dragY, setDragY] = useState(700)
+  const [dragging, setDragging] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setDragY(0), 10)
+    return () => clearTimeout(id)
+  }, [])
+
   if (!spot) return null
   const meta = getCategoryMeta(spot.category)
   const Icon = meta.Icon
   const photo = spotPhoto(spot, 1000)
   const hasTime = /^\d{1,2}:\d{2}$/.test(time)
+
+  const closeDown = () => {
+    setDragY(800)
+    setTimeout(onClose, 220)
+  }
+  const onTouchStart = (e) => {
+    if ((scrollRef.current?.scrollTop || 0) <= 0) {
+      startYRef.current = e.touches[0].clientY
+      setDragging(true)
+    } else setDragging(false)
+  }
+  const onTouchMove = (e) => {
+    if (!dragging) return
+    const dy = e.touches[0].clientY - startYRef.current
+    if (dy > 0) setDragY(dy)
+    else {
+      setDragging(false)
+      setDragY(0)
+    }
+  }
+  const onTouchEnd = () => {
+    if (!dragging) return
+    setDragging(false)
+    if (dragY > 110) closeDown()
+    else setDragY(0)
+  }
 
   const openPicking = () => {
     setTime('')
@@ -65,9 +101,21 @@ export default function SpotDetail({ spotId, onClose }) {
   return (
     <div className="fixed inset-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2">
       {/* 背景變暗 */}
-      <div className="absolute inset-0 animate-fade bg-black/45" onClick={onClose} />
-      {/* 浮動詳情卡片 */}
-      <div className="absolute inset-x-0 bottom-0 top-10 animate-sheet overflow-y-auto rounded-t-3xl bg-canvas shadow-float">
+      <div className="absolute inset-0 animate-fade bg-black/45" onClick={closeDown} />
+      {/* 浮動詳情卡片（可下滑關閉） */}
+      <div
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        className="absolute inset-x-0 bottom-0 top-10 overflow-hidden rounded-t-3xl bg-canvas shadow-float"
+        style={{
+          transform: `translateY(${dragY}px)`,
+          transition: dragging ? 'none' : 'transform 0.28s cubic-bezier(0.22,1,0.36,1)',
+        }}
+      >
+        {/* 下滑把手 */}
+        <span className="pointer-events-none absolute left-1/2 top-2 z-20 h-1.5 w-10 -translate-x-1/2 rounded-full bg-white/70" />
+        <div ref={scrollRef} className="h-full overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
       {/* 主視覺 */}
       <div
         className="relative flex h-56 items-center justify-center overflow-hidden"
@@ -83,7 +131,7 @@ export default function SpotDetail({ spotId, onClose }) {
         )}
         <button
           type="button"
-          onClick={onClose}
+          onClick={closeDown}
           className="absolute left-4 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-ink shadow-card"
         >
           <ChevronLeft size={20} />
@@ -151,6 +199,7 @@ export default function SpotDetail({ spotId, onClose }) {
           </p>
         )}
       </div>
+        </div>
       </div>
 
       {/* 選擇加入哪一天 */}
