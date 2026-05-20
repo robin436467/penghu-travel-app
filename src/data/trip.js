@@ -1,7 +1,7 @@
 // 行程基本資料與團員 / 預算（取自澎湖行程.xlsx）
 
 export const trip = {
-  title: '澎湖帶團出遊',
+  title: '澎湖五日團',
   subtitle: '五天四夜・西嶼 × 吉貝 × 花火節',
   startDate: '2026-05-22',
   endDate: '2026-05-26',

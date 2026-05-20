@@ -63,7 +63,11 @@ export default function SpotDetail({ spotId, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 left-1/2 z-50 mx-auto max-w-[480px] -translate-x-1/2 animate-fade overflow-y-auto bg-canvas">
+    <div className="fixed inset-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2">
+      {/* 背景變暗 */}
+      <div className="absolute inset-0 animate-fade bg-black/45" onClick={onClose} />
+      {/* 浮動詳情卡片 */}
+      <div className="absolute inset-x-0 bottom-0 top-10 animate-sheet overflow-y-auto rounded-t-3xl bg-canvas shadow-float">
       {/* 主視覺 */}
       <div
         className="relative flex h-56 items-center justify-center overflow-hidden"
@@ -80,7 +84,7 @@ export default function SpotDetail({ spotId, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute left-4 top-[calc(env(safe-area-inset-top)+14px)] flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-ink shadow-card"
+          className="absolute left-4 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-ink shadow-card"
         >
           <ChevronLeft size={20} />
         </button>
@@ -146,6 +150,7 @@ export default function SpotDetail({ spotId, onClose }) {
             )}
           </p>
         )}
+      </div>
       </div>
 
       {/* 選擇加入哪一天 */}

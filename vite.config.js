@@ -27,8 +27,8 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: '澎湖帶團出遊',
-        short_name: '澎湖團遊',
+        name: '澎湖五日團',
+        short_name: '澎湖五日團',
         description: '團體旅遊行程、景點與分攤記帳',
         theme_color: '#1098f0',
         background_color: '#f5f6f8',
