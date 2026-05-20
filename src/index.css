@@ -82,3 +82,10 @@ button {
 .animate-fade {
   animation: fade-in 0.2s ease-out;
 }
+
+/* 行程節點之間：點點點虛線往下流動 */
+@keyframes flow-dots {
+  to {
+    background-position-y: 12px;
+  }
+}

@@ -38,6 +38,12 @@ export default function AddExpense({ open, onClose, onSave }) {
   const [cat, setCat] = useState('餐飲')
   const [payerId, setPayerId] = useState(members[0].id)
   const [parts, setParts] = useState(fullParts)
+  const [toast, setToast] = useState(null)
+
+  const showToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2000)
+  }
 
   const amt = Number(amount) || 0
 
@@ -57,10 +63,10 @@ export default function AddExpense({ open, onClose, onSave }) {
     setParts(fullParts())
   }
 
-  const canSave = title.trim() && amt > 0 && totalWeight > 0
-
   const save = () => {
-    if (!canSave) return
+    if (!title.trim()) return showToast('請先輸入項目名稱')
+    if (!(amt > 0)) return showToast('請先輸入金額')
+    if (!(totalWeight > 0)) return showToast('請至少選一位分攤的人')
     const participants = {}
     members.forEach((m) => {
       const p = parts[m.id]
@@ -72,6 +78,7 @@ export default function AddExpense({ open, onClose, onSave }) {
   }
 
   return (
+    <>
     <Sheet open={open} onClose={onClose} title="新增花費">
       {/* 金額 */}
       <div className="rounded-2xl bg-canvas px-4 py-3">
@@ -201,13 +208,19 @@ export default function AddExpense({ open, onClose, onSave }) {
       {/* 儲存 */}
       <button
         type="button"
-        disabled={!canSave}
         onClick={save}
-        className="mt-5 w-full rounded-xl py-3.5 font-bold text-white disabled:opacity-40"
+        className="mt-5 w-full rounded-xl py-3.5 font-bold text-white active:opacity-90"
         style={{ background: '#1098f0' }}
       >
         儲存花費
       </button>
     </Sheet>
+
+    {toast && (
+      <div className="fixed bottom-28 left-1/2 z-[60] -translate-x-1/2 animate-fade rounded-full bg-ink/90 px-4 py-2.5 text-sm font-medium text-white shadow-float">
+        {toast}
+      </div>
+    )}
+    </>
   )
 }
