@@ -1,0 +1,210 @@
+import { useMemo, useState } from 'react'
+import { Minus, Plus } from 'lucide-react'
+import Sheet from './Sheet'
+import Avatar from './Avatar'
+import { members } from '../data/trip'
+import { expenseCategories } from '../ui/meta'
+import { formatNT, partWeight } from '../lib/money'
+
+const fullParts = () =>
+  Object.fromEntries(members.map((m) => [m.id, { adults: m.adults, kids: m.kids }]))
+
+function Stepper({ label, value, max, onChange }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[12px] text-ink-soft">{label}</span>
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(0, value - 1))}
+        className="flex h-6 w-6 items-center justify-center rounded-full bg-canvas text-ink-soft active:bg-line"
+      >
+        <Minus size={13} />
+      </button>
+      <span className="w-4 text-center text-sm font-bold text-ink">{value}</span>
+      <button
+        type="button"
+        onClick={() => onChange(Math.min(max, value + 1))}
+        className="flex h-6 w-6 items-center justify-center rounded-full bg-canvas text-ink-soft active:bg-line"
+      >
+        <Plus size={13} />
+      </button>
+    </div>
+  )
+}
+
+export default function AddExpense({ open, onClose, onSave }) {
+  const [title, setTitle] = useState('')
+  const [amount, setAmount] = useState('')
+  const [cat, setCat] = useState('餐飲')
+  const [payerId, setPayerId] = useState(members[0].id)
+  const [parts, setParts] = useState(fullParts)
+
+  const amt = Number(amount) || 0
+
+  const totalWeight = useMemo(
+    () => members.reduce((s, m) => s + partWeight(parts[m.id]), 0),
+    [parts],
+  )
+
+  const setPart = (id, patch) => setParts((p) => ({ ...p, [id]: { ...p[id], ...patch } }))
+  const isFamily = (m) => m.adults + m.kids > 1
+
+  const reset = () => {
+    setTitle('')
+    setAmount('')
+    setCat('餐飲')
+    setPayerId(members[0].id)
+    setParts(fullParts())
+  }
+
+  const canSave = title.trim() && amt > 0 && totalWeight > 0
+
+  const save = () => {
+    if (!canSave) return
+    const participants = {}
+    members.forEach((m) => {
+      const p = parts[m.id]
+      if (p.adults + p.kids > 0) participants[m.id] = { adults: p.adults, kids: p.kids }
+    })
+    onSave({ title: title.trim(), amount: amt, category: cat, payerId, participants })
+    reset()
+    onClose()
+  }
+
+  return (
+    <Sheet open={open} onClose={onClose} title="新增花費">
+      {/* 金額 */}
+      <div className="rounded-2xl bg-canvas px-4 py-3">
+        <p className="text-xs text-ink-soft">金額</p>
+        <div className="flex items-baseline gap-1">
+          <span className="text-lg font-bold text-ink-soft">NT$</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0"
+            className="w-full bg-transparent text-3xl font-black text-ink outline-none placeholder:text-ink-faint"
+          />
+        </div>
+      </div>
+
+      {/* 項目 */}
+      <div className="mt-3">
+        <p className="mb-1.5 text-sm font-bold text-ink">項目名稱</p>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="例如：吉貝別野午餐、加油"
+          className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-[15px] text-ink outline-none placeholder:text-ink-faint focus:border-brand"
+        />
+      </div>
+
+      {/* 分類 */}
+      <div className="mt-3">
+        <p className="mb-1.5 text-sm font-bold text-ink">分類</p>
+        <div className="no-scrollbar flex gap-2 overflow-x-auto">
+          {expenseCategories.map((c) => {
+            const active = c.key === cat
+            const Icon = c.Icon
+            return (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => setCat(c.key)}
+                className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
+                style={active ? { background: c.tint, color: '#fff' } : { background: '#f0f2f5', color: '#5b6675' }}
+              >
+                <Icon size={15} color={active ? '#fff' : c.tint} />
+                {c.key}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 誰付的 */}
+      <div className="mt-4">
+        <p className="mb-1.5 text-sm font-bold text-ink">誰付的</p>
+        <div className="flex flex-wrap gap-2">
+          {members.map((m) => {
+            const active = m.id === payerId
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setPayerId(m.id)}
+                className="flex items-center gap-1.5 rounded-full border py-1 pl-1 pr-3"
+                style={active ? { borderColor: m.color, background: m.color + '14' } : { borderColor: '#e8eaef' }}
+              >
+                <Avatar member={m} size={26} />
+                <span className="text-sm font-medium text-ink">{m.name}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 這筆誰來了（可調整每家人數） */}
+      <div className="mt-4">
+        <p className="mb-1 text-sm font-bold text-ink">這筆有誰參與</p>
+        <p className="mb-2 text-[12px] text-ink-faint">調整每家來的大人／小孩人數，沒來就調成 0；依人數權重分攤（大人 1、小孩 0.5）。</p>
+        <div className="space-y-1.5">
+          {members.map((m) => {
+            const p = parts[m.id]
+            const w = partWeight(p)
+            const joined = p.adults + p.kids > 0
+            const share = joined && totalWeight ? (amt * w) / totalWeight : 0
+            return (
+              <div
+                key={m.id}
+                className="rounded-xl border px-3 py-2"
+                style={joined ? { borderColor: m.color, background: m.color + '0d' } : { borderColor: '#e8eaef' }}
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar member={m} size={30} />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-ink">{m.name}</p>
+                    <p className="text-[11px] text-ink-faint">{m.sub}</p>
+                  </div>
+                  {joined && <span className="text-sm font-bold text-ink">{formatNT(share)}</span>}
+                </div>
+
+                <div className="mt-2 flex items-center gap-4 pl-[42px]">
+                  {isFamily(m) ? (
+                    <>
+                      <Stepper label="大人" value={p.adults} max={m.adults} onChange={(v) => setPart(m.id, { adults: v })} />
+                      {m.kids > 0 && (
+                        <Stepper label="小孩" value={p.kids} max={m.kids} onChange={(v) => setPart(m.id, { kids: v })} />
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setPart(m.id, { adults: joined ? 0 : 1, kids: 0 })}
+                      className="rounded-full px-3 py-1 text-[13px] font-medium"
+                      style={joined ? { background: m.color, color: '#fff' } : { background: '#f0f2f5', color: '#5b6675' }}
+                    >
+                      {joined ? '有參加' : '沒參加'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 儲存 */}
+      <button
+        type="button"
+        disabled={!canSave}
+        onClick={save}
+        className="mt-5 w-full rounded-xl py-3.5 font-bold text-white disabled:opacity-40"
+        style={{ background: '#1098f0' }}
+      >
+        儲存花費
+      </button>
+    </Sheet>
+  )
+}
