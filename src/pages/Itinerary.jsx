@@ -55,7 +55,7 @@ function hasConflict(ordered, index) {
   return false
 }
 
-function SortableStop({ stop, index, onAction, showConnector, animated }) {
+function SortableStop({ stop, index, onAction, showConnector, isCurrent }) {
   const meta = getStopMeta(stop.type)
   const Icon = meta.Icon
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -67,7 +67,7 @@ function SortableStop({ stop, index, onAction, showConnector, animated }) {
     opacity: isDragging ? 0.7 : 1,
     zIndex: isDragging ? 20 : undefined,
   }
-  const dotColor = animated ? '#1098f0' : '#cfd8e3'
+  const dotColor = isCurrent ? '#ff4d57' : '#cfd8e3'
 
   return (
     <div ref={setNodeRef} style={style} className="relative pl-12">
@@ -77,7 +77,7 @@ function SortableStop({ stop, index, onAction, showConnector, animated }) {
           className="pointer-events-none absolute left-[15px] top-[22px] -bottom-7 w-0.5"
           style={{
             backgroundImage: `repeating-linear-gradient(to bottom, ${dotColor} 0 3px, transparent 3px 12px)`,
-            animation: animated ? 'flow-dots 1.6s linear infinite' : 'none',
+            animation: isCurrent ? 'flow-dots 1.6s linear infinite' : 'none',
           }}
         />
       )}
@@ -158,23 +158,18 @@ export default function Itinerary() {
   const current = state.days.find((d) => d.day === day) || state.days[0]
   const stops = current.stops // 手動順序（不自動排序）
 
-  // 偵測「現在時段」：若今天正是這一天，且現在落在某兩站之間，只讓那一段流動；否則全部流動
+  // 不分哪一天：依「現在的時鐘時間」找出落在哪一段，那一段用紅色點點流動標示
   const now = new Date()
-  const [yy, mm, dd] = current.date.split('-').map(Number)
-  const isToday = now.getFullYear() === yy && now.getMonth() + 1 === mm && now.getDate() === dd
+  const nowMin = now.getHours() * 60 + now.getMinutes()
   let currentSeg = -1
-  if (isToday) {
-    const nowMin = now.getHours() * 60 + now.getMinutes()
-    for (let i = 0; i < stops.length - 1; i++) {
-      const a = toMin(stops[i].time)
-      const b = toMin(stops[i + 1].time)
-      if (a != null && b != null && nowMin >= a && nowMin < b) {
-        currentSeg = i
-        break
-      }
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = toMin(stops[i].time)
+    const b = toMin(stops[i + 1].time)
+    if (a != null && b != null && nowMin >= a && nowMin < b) {
+      currentSeg = i
+      break
     }
   }
-  const animateAll = currentSeg === -1
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -310,7 +305,7 @@ export default function Itinerary() {
                   index={i}
                   onAction={setActionStop}
                   showConnector={i < stops.length - 1}
-                  animated={animateAll || i === currentSeg}
+                  isCurrent={i === currentSeg}
                 />
               ))}
             </SortableContext>
